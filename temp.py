@@ -10,7 +10,7 @@ class Metrology(object):
 		pass
 		self.ser = None
 		#self.serial = '/dev/ttyS0'
-		self.serial = '/dev/tty.KeySerial1'
+		self.serial = '/dev/tty.USB0'
 		self.sensors=[]
 		self.delay = 0.5
 		self.start()
