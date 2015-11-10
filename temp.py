@@ -1,5 +1,5 @@
 #! /usr/bin/python
-
+"""edited for SDSS metrology"""
 import serial
 import time
 
