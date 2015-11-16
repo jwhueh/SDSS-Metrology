@@ -2,6 +2,7 @@
 """edited for SDSS metrology"""
 import serial
 import time
+import re
 
 """Make it so that the temp sensors are read from file but at the same time the file can be updated with routine"""
 
@@ -10,12 +11,13 @@ class Metrology(object):
 		pass
 		self.ser = None
 		#self.serial = '/dev/ttyS0'
-		self.serial = '/dev/tty.USB0'
-		self.sensors=[]
-		self.delay = 0.5
-		self.start()
-		self.findTempSensors()
+		self.serial = '/dev/ttyUSB0'
+		self.sensors=[] 
+		self.delay = 0.2
+		self.connect()
+		self.readTempConfig()
 		self.setupSensors()
+		self.run()
 
 	def run(self):
 		while True:
@@ -26,9 +28,10 @@ class Metrology(object):
 				temp = self.readTemp(s)
 				output = output+str(temp)
 			fout.write(output+'\n')
+			print output
 			fout.close()
 			
-			time.sleep(10)	
+			time.sleep(2)	
 
 
 	def setupSensors(self):
@@ -39,12 +42,25 @@ class Metrology(object):
 			
 
 	def findTempSensors(self):
-		self.sensors.append(self.serWrite('S\r').rstrip('\r'))
+		"""
+		This routine just polls the connected sensors and prints out 
+		their addresses.
+		"""
+		print self.serWrite('S')
+		time.sleep(self.delay)
 		while True:
-			out = self.serWrite('s\r')
+			out = self.serWrite('s')
+			time.sleep(self.delay)
 			if len(out) <=3:
                                 break
-			self.sensors.append(out.rstrip('\r'))
+			print out
+		return
+
+	def readTempConfig(self):
+		fin = open('sensors.conf','r')
+		for line in fin:
+			if not re.search('#', line):
+				self.sensors.append(line.rstrip('\n'))
 		print self.sensors
 		return
 
@@ -54,34 +70,33 @@ class Metrology(object):
 		self.serWrite('W044E4B467F')
 		self.serWrite('R')
 
-	def start(self):
-		self.ser = serial.Serial(self.serial,9600, timeout=.5)
+	def connect(self):
+		self.ser = serial.Serial(self.serial,9600,bytesize=8, timeout=.5, stopbits = 1)
 		return
 
 	def readTemp(self, dev):
 		self.deviceSelect(dev)
 		self.serWrite('M')
 		self.serWrite('W0144')
-		time.sleep(10)
 		self.serWrite('M')
+		time.sleep(1)
 		output = self.serWrite('W0ABEFFFFFFFFFFFFFFFFFF')
-		t = self.convert(output)	
+		t = self.convert(output)
+		print 'Convert', output, t
 		return t
 
 	def deviceSelect(self, dev):
-		cmd = 'A%s\r' % str(dev)
-		self.ser.write(cmd)
-		time.sleep(self.delay)
-		self.ser.readline()
+		self.serWrite('A%s' % str(dev))
 		return
 
 	def serWrite(self, text1 = None, text2 = None):
 		if text2 == None:
 			cmd = '%s\r' % text1
 		self.ser.write(cmd)
-		time.sleep(self.delay)
+		time.sleep(self.delay) #this delay is necessary
 		out = self.ser.readline()
-		return out
+		print 'HA7E: ', repr(out)
+		return out.rstrip('\r')
 
 	def convert(self, sig):
 		lsb = sig[2:4]
@@ -93,4 +108,4 @@ class Metrology(object):
 if __name__ == "__main__":
 	m = Metrology()
 	#m.readTemp('0FFCDBE0000F2FBA')
-	m.run()
+	#m.run()
