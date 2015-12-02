@@ -10,16 +10,15 @@ class Metrology(object):
 	def __init__(self):
 		pass
 		self.ser = None
-		self.serial = '/dev/ttyUSB0'
-		#self.serial = '/dev/ttymxc4'
+		self.serial = '/dev/tty.KeySerial1'
 		self.sensors=[] 
 		self.delay = 0.2
 		self.connect()
 		self.findTempSensors()
-		#self.readTempConfig()
-		#self.setupSensors()
-		#self.run()
-		self.powerDown()
+		self.readTempConfig()
+		self.setupSensors()
+		self.run()
+		#self.powerDown()
 
 	def run(self):
 		while True:
