@@ -12,9 +12,9 @@ class Metrology(object):
 		self.ser = None
 		self.serial = '/dev/tty.KeySerial1'
 		self.sensors=[] 
-		self.delay = 0.2
+		self.delay = 0.4
 		self.connect()
-		self.findTempSensors()
+		#self.findTempSensors()
 		self.readTempConfig()
 		self.setupSensors()
 		self.run()
@@ -32,7 +32,7 @@ class Metrology(object):
 			print output
 			fout.close()
 			
-			time.sleep(30)	
+			time.sleep(.1)	
 
 
 	def setupSensors(self):
@@ -72,7 +72,9 @@ class Metrology(object):
 
 	def setResolution(self,dev):
 		self.deviceSelect(dev)
-		self.serWrite('W044E4B467F')
+		#self.serWrite('W044E4B467F') #12 bit resolution -- 0.0625 increments
+		self.serWrite('W044E4B465F') #11 bit resolution -- 0.125 increments
+		#self.serWrite('W044E4B465F') #10 bit resolution -- 0.25 increments
 		self.serWrite('R')
 
 	def connect(self):
@@ -84,10 +86,11 @@ class Metrology(object):
 		self.serWrite('M')
 		self.serWrite('W0144')
 		self.serWrite('M')
-		time.sleep(1)
+		time.sleep(self.delay)
 		output = self.serWrite('W0ABEFFFFFFFFFFFFFFFFFF')
 		t = self.convert(output)
-		print 'Convert', output, t
+		#print 'Convert', output, t  #Use to print hex value and numerical value of temperature
+		print 'Temperature is', t  #Use to print only numerical value of temperature
 		return t
 
 	def deviceSelect(self, dev):
@@ -98,7 +101,7 @@ class Metrology(object):
 		if text2 == None:
 			cmd = '%s\r' % text1
 		self.ser.write(cmd)
-		time.sleep(1) #this delay is necessary
+		time.sleep(.01) #this delay is necessary
 		out = self.ser.readline()
 		x = 0
 		"""while x<5:
