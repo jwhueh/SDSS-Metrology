@@ -10,7 +10,7 @@ class Metrology(object):
 	def __init__(self):
 		pass
 		self.ser = None
-		self.serial = '/dev/tty.KeySerial1'
+		self.serial = '/dev/ttyUSB0'
 		self.sensors=[] 
 		self.delay = 0.4
 		self.connect()
@@ -78,7 +78,7 @@ class Metrology(object):
 		self.serWrite('R')
 
 	def connect(self):
-		self.ser = serial.Serial(self.serial,9600,bytesize=8, timeout=.5, stopbits = 1)
+		self.ser = serial.Serial(self.serial,9600,bytesize=8,parity=serial.PARITY_NONE, timeout=0, stopbits = 1)
 		return
 
 	def readTemp(self, dev):
