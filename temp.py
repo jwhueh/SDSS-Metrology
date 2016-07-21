@@ -10,11 +10,11 @@ class Metrology(object):
 	def __init__(self):
 		pass
 		self.ser = None
-		self.serial = '/dev/tty.KeySerial1'
+		self.serial = '/dev/ttyUSB0'
 		self.sensors=[] 
-		self.delay = 0.4
+		self.delay = 0.1
 		self.connect()
-		#self.findTempSensors()
+		self.findTempSensors()
 		self.readTempConfig()
 		self.setupSensors()
 		self.run()
@@ -26,13 +26,13 @@ class Metrology(object):
 			output=time.strftime("%Y%m%dT%H%M%SZ")
 			for s in self.sensors:
 				output = output+','	
+				start = time.time()
 				temp = self.readTemp(s)
+				print "temp timing", time.time() - start
 				output = output+str(temp)
 			fout.write(output+'\n')
 			print output
 			fout.close()
-			
-			time.sleep(.1)	
 
 
 	def setupSensors(self):
@@ -52,7 +52,7 @@ class Metrology(object):
 		their addresses.
 		"""
 		print self.serWrite('S')
-		time.sleep(1)
+		time.sleep(.2)
 		while True:
 			out = self.serWrite('s')
 			time.sleep(self.delay)
@@ -74,7 +74,7 @@ class Metrology(object):
 		self.deviceSelect(dev)
 		#self.serWrite('W044E4B467F') #12 bit resolution -- 0.0625 increments
 		self.serWrite('W044E4B465F') #11 bit resolution -- 0.125 increments
-		#self.serWrite('W044E4B465F') #10 bit resolution -- 0.25 increments
+		#self.serWrite('W044E4B463F') #10 bit resolution -- 0.25 increments
 		self.serWrite('R')
 
 	def connect(self):
@@ -83,14 +83,14 @@ class Metrology(object):
 
 	def readTemp(self, dev):
 		self.deviceSelect(dev)
-		self.serWrite('M')
+		#self.serWrite('M')
 		self.serWrite('W0144')
-		self.serWrite('M')
 		time.sleep(self.delay)
+		self.serWrite('M')
 		output = self.serWrite('W0ABEFFFFFFFFFFFFFFFFFF')
 		t = self.convert(output)
 		#print 'Convert', output, t  #Use to print hex value and numerical value of temperature
-		print 'Temperature is', t  #Use to print only numerical value of temperature
+		print time.strftime("%Y%m%dT%H%M%S"),str(dev), str(t)  #Use to print only numerical value of temperature
 		return t
 
 	def deviceSelect(self, dev):
@@ -101,22 +101,42 @@ class Metrology(object):
 		if text2 == None:
 			cmd = '%s\r' % text1
 		self.ser.write(cmd)
-		time.sleep(.01) #this delay is necessary
 		out = self.ser.readline()
-		x = 0
-		"""while x<5:
-			out = self.ser.readline()
-			print 'HA7E: ', repr(out)
-			x = x+1"""
-		print 'HA7E: ', repr(out)
 		return out.rstrip('\r')
 
 	def convert(self, sig):
 		lsb = sig[2:4]
 		msb = sig[4:6]
 		lm = msb+lsb
-		temp = int('0x%s' % lm,0)/16.
-		return temp
+		#temp = int('0x%s' % lm,0)/16.
+		neg = sig[4:5]
+                count_remain = sig[14:16]
+                count_c = sig[16:18]
+                #print lsb, msb, neg, count_remain, count_c
+                #make into binary
+                binary = bin(int(lm, 16))[2:].zfill(16)
+
+                if neg == 'F':
+                        print binary
+                        outbin = ""
+                        for b in binary:
+                                if b == '1':
+                                        outbin = outbin + '0'
+                                else:
+                                        outbin = outbin + '1'
+
+                        outhex = (int(outbin, 2))
+                        #print outhex
+                        temp = -int('%s' % outhex,0)/16.
+                        return temp
+
+
+                else:
+                        #print lm
+                        temp = int('0x%s' % str(lm),0)/16.
+                        return temp
+                return
+
 
 if __name__ == "__main__":
 	m = Metrology()
